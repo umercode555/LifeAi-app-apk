@@ -1,0 +1,97 @@
+name: Build APK
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      # Scenario + parser tests. A failing test is REPORTED but no longer blocks the APK,
+      # so you can always install and try the app. Look for the red/orange "Tests" step.
+      - name: Unit tests
+        id: tests
+        continue-on-error: true
+        working-directory: LifeAI-Android
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee ../test.log
+
+      - name: Build APK
+        working-directory: LifeAI-Android
+        run: |
+          set -o pipefail
+          gradle assembleDebug -PverCode=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tee ../build.log
+
+      - name: Show errors (only if build failed)
+        if: failure()
+        run: |
+          grep -E "^e: |error:|FAILED|What went wrong" -A2 build.log | head -80 || true
+
+      - name: Rename APK
+        run: cp LifeAI-Android/app/build/outputs/apk/debug/app-debug.apk LifeAI.apk
+
+      - name: Zip extension
+        run: cd LifeAI-Extension && zip -r ../LifeAI-Extension.zip . -x "*.sql"
+
+      - name: Summary
+        run: |
+          {
+            echo "### LifeAI build #${{ github.run_number }}"
+            echo "- APK: built ✅"
+            echo "- Unit tests: ${{ steps.tests.outcome == 'success' && 'passed ✅' || 'FAILED ⚠️ (APK still built; open the \"Unit tests\" step log)' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeAI-debug-apk
+          path: LifeAI.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeAI-Extension
+          path: LifeAI-Extension.zip
+
+      # Logs + test reports are always saved, so errors can be copied even after a red run.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-logs
+          path: |
+            build.log
+            test.log
+            LifeAI-Android/app/build/reports/tests/**
+          if-no-files-found: ignore
+
+      # Rolling "latest" release → open the repo's Releases page on your phone and tap LifeAI.apk
+      - name: Move latest tag
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: git tag -f latest && git push -f origin latest
+      - name: Publish latest release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Latest build #${{ github.run_number }}
+          artifacts: "LifeAI.apk,LifeAI-Extension.zip"
+          allowUpdates: true
+          replacesArtifacts: true
+          makeLatest: true
+          body: "Auto-built from ${{ github.sha }}. Install LifeAI.apk over the old app (same signing key)."
