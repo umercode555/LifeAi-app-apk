@@ -25,21 +25,27 @@ jobs:
         with:
           gradle-version: 8.7
 
+      # Folder names don't matter ("LifeAI-Android 2", nested folders…): find the project by its files.
+      - name: Locate project folders
+        run: |
+          A=$(dirname "$(find . -maxdepth 3 -name settings.gradle.kts -not -path './.git/*' | head -1)")
+          E=$(dirname "$(find . -maxdepth 3 -name manifest.json -path '*xtension*' | head -1)")
+          echo "ANDROID=$A" >> "$GITHUB_ENV"; echo "EXT=$E" >> "$GITHUB_ENV"
+          echo "Android: $A | Extension: $E"
+
       # Scenario + parser tests. A failing test is REPORTED but no longer blocks the APK,
       # so you can always install and try the app. Look for the red/orange "Tests" step.
       - name: Unit tests
         id: tests
         continue-on-error: true
-        working-directory: LifeAI-Android
         run: |
           set -o pipefail
-          gradle testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee ../test.log
+          cd "$ANDROID" && gradle testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/test.log"
 
       - name: Build APK
-        working-directory: LifeAI-Android
         run: |
           set -o pipefail
-          gradle assembleDebug -PverCode=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tee ../build.log
+          cd "$ANDROID" && gradle assembleDebug -PverCode=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Show errors (only if build failed)
         if: failure()
@@ -47,10 +53,10 @@ jobs:
           grep -E "^e: |error:|FAILED|What went wrong" -A2 build.log | head -80 || true
 
       - name: Rename APK
-        run: cp LifeAI-Android/app/build/outputs/apk/debug/app-debug.apk LifeAI.apk
+        run: cp "$ANDROID/app/build/outputs/apk/debug/app-debug.apk" LifeAI.apk
 
       - name: Zip extension
-        run: cd LifeAI-Extension && zip -r ../LifeAI-Extension.zip . -x "*.sql"
+        run: cd "$EXT" && zip -r "$GITHUB_WORKSPACE/LifeAI-Extension.zip" . -x "*.sql"
 
       - name: Summary
         run: |
@@ -77,7 +83,7 @@ jobs:
           path: |
             build.log
             test.log
-            LifeAI-Android/app/build/reports/tests/**
+            **/build/reports/tests/**
           if-no-files-found: ignore
 
       # Rolling "latest" release → open the repo's Releases page on your phone and tap LifeAI.apk
