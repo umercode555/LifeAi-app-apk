@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Life AI · Engine</title><link rel="stylesheet" href="dashboard.css"></head><body>
+<header><div class="brand"><span class="dot"></span>Life AI <small>Engine</small></div>
+<div class="hdr-right"><span id="pill" class="pill off">Stopped</span><button id="toggle" class="btn primary">Start engine</button></div></header>
+<main>
+<section class="stats">
+<div class="stat"><b id="s1">–</b><span>Images waiting</span></div><div class="stat"><b id="s2">–</b><span>Analysed today</span></div>
+<div class="stat"><b id="s3">–</b><span>Calls today</span></div><div class="stat"><b id="s4">0</b><span>Brain queue</span></div></section>
+<section class="grid">
+<div class="card"><h2>Gemini tabs</h2>
+<div class="row"><span>👁 Vision chat <span id="vs" class="tag">idle</span></span><button id="ovision">Open</button></div>
+<div class="row"><span>🧠 Brain chat <span id="bs" class="tag">idle</span></span><button id="obrain">Open</button></div>
+<p style="color:var(--mut);font-size:12px">Leave Gemini tabs open in the background (any tab, any window). Don't close them.</p></div>
+<div class="card"><h2>Live call</h2><div id="call" class="call empty">No active call</div></div>
+<div class="card wide"><h2>Latest observations</h2><div id="obs"></div></div>
+<div class="card wide"><h2>Activity log</h2><pre id="log"></pre></div></section>
+<section class="grid">
+<div class="card wide"><h2>Screen time — phone + laptop</h2>
+<div class="btns" style="margin:0 0 10px"><button data-r="0" class="rng">Today</button><button data-r="6" class="rng">7 days</button><button data-r="29" class="rng">30 days</button></div>
+<div id="usageTotal" style="font-size:20px;font-weight:700"></div><div id="usage"></div></div>
+<div class="card"><h2>Pair phone</h2>
+<p style="color:var(--mut);font-size:12px">Open Life AI on the phone → Screen tab → “Scan laptop QR”. It copies the Supabase settings and links both devices.</p>
+<div id="qr" style="background:#fff;padding:10px;border-radius:12px;display:inline-block;min-width:120px;min-height:120px"></div>
+<p id="pairInfo" style="font-size:12px;color:var(--mut)"></p><div class="btns"><button id="newPair">New code</button></div></div>
+<div class="card"><h2>Devices</h2><div id="devs" style="font-size:13px"></div>
+<p style="color:var(--mut);font-size:12px">Laptop time counts the active tab of the focused Chrome window while you are not idle. Press “Start engine” (top right) and keep it running: it reads your photos through Gemini web (no API credits). The phone app then decides goals/interruptions and uses the text API only for chat and calls.</p></div></section>
+<details class="card" id="setup" open><summary>Setup</summary>
+<label>Supabase URL</label><input type="text" id="sbUrl" placeholder="https://xxxx.supabase.co">
+<label>Supabase anon key</label><input type="password" id="sbKey">
+<label>Vision chat link (Gemini chat for images — leave blank to auto-create)</label><input type="text" id="visionUrl" placeholder="https://gemini.google.com/app/...">
+<label>Brain chat link (Gemini chat for decisions & conversation)</label><input type="text" id="brainUrl" placeholder="https://gemini.google.com/app/...">
+<label>About me — who you are, your room, your people, your places (goes into both setup prompts)</label><textarea id="about"></textarea>
+<div class="btns"><button id="save" class="btn primary">Save</button><button id="setupV">Send setup → Vision</button><button id="setupB">Send setup → Brain</button></div>
+<label>Reference photos (you, family, friends, rooms). File name = label, e.g. <i>Umer face.jpg</i>, <i>Umer room.jpg</i>, <i>Ali friend.jpg</i></label>
+<input type="file" id="refs" multiple accept="image/*"><div class="btns"><button id="sendRefs">Send references → Vision</button></div></details></main>
+<script src="qrcode.js"></script><script src="dashboard.js"></script></body></html>

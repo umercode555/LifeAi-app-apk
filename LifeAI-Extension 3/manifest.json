@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Life AI Engine",
+  "version": "2.0.0",
+  "description": "Tracks laptop screen time, pairs with the Life AI phone app (QR), optional Gemini-web engine.",
+  "permissions": ["tabs", "storage", "scripting", "idle", "alarms"],
+  "host_permissions": ["https://gemini.google.com/*", "https://*.supabase.co/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Open Life AI Engine" },
+  "content_scripts": [{ "matches": ["https://gemini.google.com/*"], "js": ["gemini.js"], "run_at": "document_idle" }]
+}
